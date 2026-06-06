@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 export const metadata: Metadata = {
   title: "Gyan - Collective Knowledge of Homeopathy",
   description: "Share and discover clinical observations in homeopathy",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
