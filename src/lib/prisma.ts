@@ -3,11 +3,18 @@ import { PrismaLibSql } from '@prisma/adapter-libsql'
 import { createClient } from '@libsql/client'
 
 const prismaClientSingleton = () => {
-  const libsql = createClient({
-    url: process.env.DATABASE_URL || "file:./dev.db",
-    authToken: process.env.DATABASE_AUTH_TOKEN,
+  const dbUrl = process.env.DATABASE_URL && process.env.DATABASE_URL !== "undefined"
+    ? process.env.DATABASE_URL
+    : "file:./dev.db";
+  
+  const authToken = process.env.DATABASE_AUTH_TOKEN && process.env.DATABASE_AUTH_TOKEN !== "undefined"
+    ? process.env.DATABASE_AUTH_TOKEN
+    : undefined;
+
+  const adapter = new PrismaLibSql({
+    url: dbUrl,
+    authToken: authToken,
   })
-  const adapter = new PrismaLibSql(libsql)
   return new PrismaClient({ adapter })
 }
 

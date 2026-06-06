@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, MessageCircle, Heart, Trash2 } from "lucide-react";
+import { User, MessageCircle, Heart, Trash2, Flag, Edit } from "lucide-react";
 import styles from "./PostCard.module.css";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
@@ -15,6 +15,8 @@ type PostCardProps = {
     remedy: string | null;
     content: string;
     createdAt: Date;
+    category?: { id: string; name: string } | null;
+    tags?: { id: string; name: string }[];
     author: {
       id: string;
       name: string | null;
@@ -33,6 +35,34 @@ export default function PostCard({ post }: PostCardProps) {
   const [likes, setLikes] = useState(post._count.likes);
   const [isLiked, setIsLiked] = useState(false); // We would check if current user liked it in reality
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
+
+  const handleReport = async () => {
+    if (!session) {
+      alert("You must be logged in to report an observation.");
+      return;
+    }
+    const reason = window.prompt("Why are you reporting this observation?");
+    if (!reason || reason.trim() === "") return;
+
+    setIsReporting(true);
+    try {
+      const res = await fetch(`/api/posts/${post.id}/report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason })
+      });
+      if (res.ok) {
+        alert("Thank you for your report. An admin will review it shortly.");
+      } else {
+        alert("Failed to submit report.");
+      }
+    } catch (e) {
+      alert("An error occurred");
+    } finally {
+      setIsReporting(false);
+    }
+  };
 
   const handleLike = async () => {
     if (!session) return;
@@ -95,14 +125,19 @@ export default function PostCard({ post }: PostCardProps) {
           </div>
         </div>
         {session?.user?.id === post.author.id && (
-          <button 
-            className={styles.deleteBtn} 
-            onClick={handleDelete}
-            disabled={isDeleting}
-            title="Delete post"
-          >
-            <Trash2 size={18} />
-          </button>
+          <div style={{display: 'flex', gap: '0.5rem'}}>
+            <Link href={`/post/${post.id}/edit`} className={styles.deleteBtn} style={{ color: 'var(--text-secondary)' }} title="Edit post">
+              <Edit size={18} />
+            </Link>
+            <button 
+              className={styles.deleteBtn} 
+              onClick={handleDelete}
+              disabled={isDeleting}
+              title="Delete post"
+            >
+              <Trash2 size={18} />
+            </button>
+          </div>
         )}
       </div>
 
@@ -114,9 +149,17 @@ export default function PostCard({ post }: PostCardProps) {
           {post.symptom && (
             <span className={styles.tag}>Symptom: {post.symptom}</span>
           )}
+          {post.category && (
+            <span className={`${styles.tag} ${styles.categoryTag}`}>{post.category.name}</span>
+          )}
           {post.remedy && (
             <span className={styles.tag}>Remedy: {post.remedy}</span>
           )}
+          {post.tags && post.tags.map(t => (
+            <span key={t.id} className={styles.tag} style={{background: 'rgba(255,255,255,0.1)'}}>
+              #{t.name}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -132,6 +175,16 @@ export default function PostCard({ post }: PostCardProps) {
           <MessageCircle size={18} />
           <span>{post._count.comments} Comments</span>
         </Link>
+        <button 
+          className={styles.actionBtn}
+          onClick={handleReport}
+          disabled={isReporting}
+          title="Report this post"
+          style={{marginLeft: 'auto', color: 'var(--text-secondary)'}}
+        >
+          <Flag size={18} />
+          <span>Report</span>
+        </button>
       </div>
     </div>
   );

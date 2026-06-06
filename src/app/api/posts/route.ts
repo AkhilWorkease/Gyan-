@@ -12,11 +12,16 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { title, symptom, remedy, content } = body;
+    const { title, symptom, remedy, content, categoryId, tags } = body;
 
     if (!content) {
       return new NextResponse("Content is required", { status: 400 });
     }
+
+    const tagsConnectOrCreate = tags && Array.isArray(tags) ? tags.map((t: string) => ({
+      where: { name: t.trim().toLowerCase() },
+      create: { name: t.trim().toLowerCase() }
+    })) : [];
 
     const post = await prisma.post.create({
       data: {
@@ -25,6 +30,10 @@ export async function POST(req: Request) {
         remedy,
         content,
         authorId: session.user.id,
+        categoryId: categoryId || undefined,
+        tags: tagsConnectOrCreate.length > 0 ? {
+          connectOrCreate: tagsConnectOrCreate
+        } : undefined,
       },
     });
 

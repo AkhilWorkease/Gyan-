@@ -1,18 +1,17 @@
 import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import styles from "./page.module.css";
+import styles from "../../post/[id]/page.module.css";
 import Link from "next/link";
 import { User, MessageCircle } from "lucide-react";
-import CommentForm from "./CommentForm";
-import DeletePostButton from "./DeletePostButton";
+import AnswerForm from "./AnswerForm";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function DoubtPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
 
-  const post = await prisma.post.findUnique({
+  const doubt = await prisma.doubt.findUnique({
     where: { id },
     include: {
       author: true,
@@ -22,13 +21,10 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
         },
         orderBy: { createdAt: "asc" },
       },
-      _count: {
-        select: { likes: true },
-      },
     },
   });
 
-  if (!post) {
+  if (!doubt) {
     notFound();
   }
 
@@ -41,44 +37,33 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
               <User size={24} />
             </div>
             <div className={styles.meta}>
-              <Link href={`/profile/${post.author.id}`} className={styles.authorName}>
-                {post.author.name}
+              <Link href={`/profile/${doubt.author.id}`} className={styles.authorName}>
+                {doubt.author.name}
               </Link>
-              <span className={styles.specialty}>{post.author.specialty}</span>
+              <span className={styles.specialty}>{doubt.author.specialty}</span>
               <span className={styles.date}>
-                {new Date(post.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                {new Date(doubt.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
               </span>
             </div>
           </div>
-          {session?.user?.id === post.author.id && (
-            <DeletePostButton postId={post.id} />
-          )}
         </div>
 
         <div className={styles.body}>
-          {post.title && <h1 className={styles.title}>{post.title}</h1>}
-          <div className={styles.tags}>
-            {post.symptom && (
-              <span className={styles.tag}>Symptom: {post.symptom}</span>
-            )}
-            {post.remedy && (
-              <span className={styles.tag}>Remedy: {post.remedy}</span>
-            )}
-          </div>
-          <p className={styles.content}>{post.content}</p>
+          <h1 className={styles.title}>{doubt.title}</h1>
+          <p className={styles.content}>{doubt.content}</p>
         </div>
       </div>
 
       <div className={styles.commentsSection}>
         <div className={styles.commentsHeader}>
           <MessageCircle size={24} />
-          <h2>Comments ({post.comments.length})</h2>
+          <h2>Answers ({doubt.comments.length})</h2>
         </div>
 
-        <CommentForm postId={post.id} />
+        <AnswerForm doubtId={doubt.id} />
 
         <div className={styles.commentList}>
-          {post.comments.map((comment: any) => (
+          {doubt.comments.map((comment: any) => (
             <div key={comment.id} className={styles.commentCard}>
               <div className={styles.commentAvatar}>
                 <User size={16} />

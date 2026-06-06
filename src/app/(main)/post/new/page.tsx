@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import styles from "./page.module.css";
@@ -13,8 +13,18 @@ export default function NewPost() {
   const [symptom, setSymptom] = useState("");
   const [remedy, setRemedy] = useState("");
   const [content, setContent] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [tags, setTags] = useState("");
+  const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then(res => res.json())
+      .then(data => setCategories(data))
+      .catch(console.error);
+  }, []);
 
   if (!session) {
     return (
@@ -33,10 +43,11 @@ export default function NewPost() {
     setError("");
 
     try {
+      const tagsArray = tags.split(",").map(t => t.trim()).filter(t => t.length > 0);
       const res = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, symptom, remedy, content }),
+        body: JSON.stringify({ title, symptom, remedy, content, categoryId, tags: tagsArray }),
       });
 
       if (!res.ok) {
@@ -70,6 +81,34 @@ export default function NewPost() {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Brief summary of your observation"
             />
+          </div>
+
+          <div className={styles.row}>
+            <div className={styles.inputGroup}>
+              <label htmlFor="categoryId">Category</label>
+              <select
+                id="categoryId"
+                className="input-field"
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+              >
+                <option value="">Select a category...</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className={styles.inputGroup}>
+              <label htmlFor="tags">Tags (Comma-separated)</label>
+              <input
+                id="tags"
+                className="input-field"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="e.g. skin, herbal"
+              />
+            </div>
           </div>
 
           <div className={styles.row}>
